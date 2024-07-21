@@ -1,9 +1,13 @@
 import express from 'express';
-import { simpleParser } from 'mailparser';
-import bodyParser from 'body-parser'; // Add this line to import body-parser
+import { simpleParser, MailParser } from 'mailparser';
+import bodyParser from 'body-parser';
+import { inspect } from 'util';
+import moment from 'moment';
+import { buildAttMessageFunction, findAttachmentParts } from './utils/index.js'
+import fs from 'fs';
 import dotenv from 'dotenv';
 
-import connection from './config/email-config.js'; // Import the IMAP configuration
+import connection from './config/email-config.js';
 import transporter from './config/nodemail-config.js';
 
 dotenv.config();
@@ -43,7 +47,7 @@ app.get('/read-emails', async (req, res) => {
         connection.once('ready', function () {
             connection.openBox('INBOX', true, function (err, box) {
                 if (err) throw err;
-                connection.search(['UNSEEN', ['SINCE', 'July 20, 2024']], function (err, results) {
+                connection.search(['UNSEEN', ['SINCE', moment().format('YYYY-MM-DD')]], function (err, results) {
                     if (err) throw err;
                     var f = connection.fetch(results, { bodies: '' });
                     f.on('message', function (msg, seqno) {
@@ -53,9 +57,7 @@ app.get('/read-emails', async (req, res) => {
                             console.log(prefix + 'Body');
                             const parsed = await simpleParser(stream)
                             // console.log(parsed)
-                            fs.writeFileSync(`msg-${seqno}-body.txt`, JSON.stringify(parsed), 'utf8')
-                            // write to file
-                            // stream.pipe(fs.createWriteStream('msg-' + seqno + '-body.txt'));
+                            fs.writeFileSync(`msg-${seqno}-body.json`, JSON.stringify(parsed), 'utf8')
                         });
                         msg.once('attributes', function (attrs) {
                             console.log(prefix + 'Attributes: %s', inspect(attrs, false, 8));
