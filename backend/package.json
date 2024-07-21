@@ -1,0 +1,27 @@
+{
+  "name": "backendemail",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "node app.js",
+    "dev": "nodemon app.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "pg": "^8.12.0",
+    "pg-hstore": "^2.3.4",
+    "sequelize": "^6.37.3",
+    "imap": "^0.8.19",
+    "mailparser": "^3.7.1",
+    "nodemailer": "^6.9.14"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.4"
+  },
+  "type": "module"
+}
