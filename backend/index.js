@@ -40,63 +40,57 @@ app.post('/send-email', (req, res) => {
 app.get('/read-emails', async (req, res) => {
     const emails = [];
     try {
-        const connection = new imap(imapOptions);
-        connection.connect();
-
-        await new Promise((resolve, reject) => connection.once('ready', resolve));
-        await new Promise((resolve, reject) => connection.once('error', reject));
-
-        try {
-            const box = await new Promise((resolve, reject) => {
-                connection.openBox('INBOX', true, (err, box) => {
-                    if (err) reject(err);
-                    else resolve(box);
-                });
-            });
-
-            const results = await new Promise((resolve, reject) => {
-                connection.search([['UNSEEN']], (err, results) => {
-                    if (err) reject(err);
-                    else resolve(results);
-                });
-            });
-
-            for (let messageId of results) {
-                const messages = await new Promise((resolve, reject) => {
-                    connection.fetch(messageId, { bodies: ['HEADER.FIELDS (SUBJECT FROM DATE)', 'TEXT'] }, (err, messages) => {
-                        if (err) reject(err);
-                        else resolve(messages);
-                    });
-                });
-
-                for (let message of messages) {
-                    const parsed = await new Promise((resolve, reject) => {
-                        simpleParser(message.body, (err, parsed) => {
-                            if (err) reject(err);
-                            else resolve(parsed);
+        connection.once('ready', function () {
+            connection.openBox('INBOX', true, function (err, box) {
+                if (err) throw err;
+                connection.search(['UNSEEN', ['SINCE', 'July 20, 2024']], function (err, results) {
+                    if (err) throw err;
+                    var f = connection.fetch(results, { bodies: '' });
+                    f.on('message', function (msg, seqno) {
+                        console.log('Message #%d', seqno);
+                        var prefix = '(#' + seqno + ') ';
+                        msg.on('body', async function (stream, info) {
+                            console.log(prefix + 'Body');
+                            const parsed = await simpleParser(stream)
+                            // console.log(parsed)
+                            fs.writeFileSync(`msg-${seqno}-body.txt`, JSON.stringify(parsed), 'utf8')
+                            // write to file
+                            // stream.pipe(fs.createWriteStream('msg-' + seqno + '-body.txt'));
+                        });
+                        msg.once('attributes', function (attrs) {
+                            console.log(prefix + 'Attributes: %s', inspect(attrs, false, 8));
+                        });
+                        msg.once('end', function () {
+                            console.log(prefix + 'Finished');
                         });
                     });
-
-                    emails.push({
-                        subject: parsed.subject,
-                        from: parsed.from,
-                        date: parsed.date,
-                        text: parsed.text,
+                    f.once('error', function (err) {
+                        console.log('Fetch error: ' + err);
                     });
-                }
-            }
-        } catch (error) {
-            console.log('Error processing emails:', error);
-            res.status(500).json({ error: 'Failed to process emails' });
-            return;
-        }
+                    f.once('end', function () {
+                        console.log('Done fetching all messages!');
+                        connection.end();
+                    });
+                });
+            });
+        });
+        connection.end();
 
         res.status(200).json(emails);
+
+        connection.once('error', function (err) {
+            console.log(err);
+        });
+
+        connection.once('end', function () {
+            console.log('Connection ended');
+        });
+
+        connection.connect();
+
     } catch (error) {
         console.log('Error reading emails:', error);
         res.status(500).json({ error: 'Failed to read emails' });
-    } finally {
-        connection.end();
     }
 });
 
