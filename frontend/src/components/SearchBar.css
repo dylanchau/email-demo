@@ -1,0 +1,19 @@
+.search-bar {
+    background-color: #657487;
+    display: flex;
+    align-items: center;
+    padding: 5px 10px;
+  }
+  
+  .search-bar input {
+    color: white;
+  }
+  
+  .search-bar svg {
+    color: white;
+  }
+  
+  .search-bar .MuiIconButton-root {
+    color: white;
+  }
+  

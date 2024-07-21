@@ -1,0 +1,10 @@
+.email-content {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .email-image {
+    max-width: 100%;
+    height: auto;
+  }
+  
